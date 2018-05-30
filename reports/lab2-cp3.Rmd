@@ -8,6 +8,7 @@ output:
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(here)
+library(plotly)
 theme_set(theme_bw())
 ```
 
@@ -31,27 +32,8 @@ Os temas das perguntas no questionário:
 names(respostas)[10:23] 
 ```
 
-Quais os temas mais e menos apoiados? 
-
-```{r}
-por_tema = 
-    respostas_long %>% 
-    group_by(tema) %>% 
-    summarise(apoio = sum(resposta == "S") / n())
-
-por_tema %>% 
-    ggplot(aes(x = reorder(tema, apoio), y = apoio, ymax = apoio, ymin = 0)) + 
-    geom_point(size = 2) + 
-    geom_linerange(size = .3) + 
-    scale_y_continuous(limits = c(0, 1)) + 
-    coord_flip() + 
-    labs(
-        y = "Proporção de apoios", 
-        x = ""
-    )
-```
-
-Em geral, candidatos que não apoiam estado laico também não apoiam as causas LGBT e a descriminalização do aborto?
+#1. Em geral, candidatos que não apoiam estado laico também não apoiam a descriminalização do aborto?
+###Para responder essa pergunta, irei pegar os candidatos que votaram não para o estado laico na descriminalização do aborto.
 ```{r}
 contra_estado_laico = 
     respostas %>% 
@@ -60,19 +42,92 @@ contra_estado_laico =
            value = "resposta", 
            10:23) %>%
     group_by(tema)  %>% 
-    filter(tema %in% c("Descriminalização do aborto","Adoção por famílias LGBTs","Criminalização da LGBTfobia","Respeito à identidade de gênero de pessoas trans")) %>%
+    filter(tema %in% c("Descriminalização do aborto")) %>%
     summarise(apoio = sum(resposta == "S") / n())
 
 
-contra_estado_laico %>% 
-    ggplot(aes(x = reorder(tema, apoio), y = apoio, ymax = apoio, ymin = 0)) + 
+ggplotly(ggplot(data=contra_estado_laico, aes(x = reorder(tema, apoio), y = apoio, ymax = apoio, ymin = 0)) + 
     geom_point(size = 2) + 
     geom_linerange(size = .3) + 
     scale_y_continuous(limits = c(0, 1)) + 
     coord_flip() + 
     labs(
-        y = "Proporção de apoios", 
+        y = "Proporção de apoios dos contra o estado laico", 
         x = ""
-    )
+    ))
 
 ```
+Mais da metade dos que disseram não ao estado laico, também disseram não para a descriminalização do aborto, isso se deve ao fato de que o aborto é uma prática que vai de encontro aos ensinamentos cristãos, que toda vida só pode ser tirada por Deus, e o ser humano não deve interferir nisso.
+
+
+#1.1. E em relação as causas LGBT, os candidatos que não apoiam estado laico também não as apoiam?
+###Para responder essa pergunta, irei pegar os candidatos que votaram não para o estado laico nas causas LGBT's
+```{r}
+contra_estado_laico = 
+    respostas %>% 
+    filter(`Estado Laico` %in% c("N")) %>% 
+    gather(key = "tema", 
+           value = "resposta", 
+           10:23) %>%
+    group_by(tema)  %>% 
+    filter(tema %in% c("Adoção por famílias LGBTs","Criminalização da LGBTfobia","Respeito à identidade de gênero de pessoas trans")) %>%
+    summarise(apoio = sum(resposta == "S") / n())
+
+
+ggplotly(ggplot(data=contra_estado_laico,aes(x = reorder(tema, apoio), y = apoio ,ymax = apoio, ymin = 0,colour=tema))+
+    geom_point(size = 2) + 
+    geom_linerange(size = .2) + 
+    scale_y_continuous(limits = c(0, 1)) + 
+    coord_flip() + 
+    labs(
+        y = "Proporção de apoios dos contra o estado laico", 
+        x = ""
+    ))
+
+```
+Em relação as causas LGBT's as proporções dos que apoiam as causas, mesmo sendo contra o estado laico, são altas, a maioria disseram sim para as causas LGBT's.
+
+#2. Agora observações em relação aos candidatos de um certo gênero ou raça. Candidatos com raça preta tende a apoiar mais temas relacionado á preconceitos raciais?
+###Para responder essa pergunta irei selecionar todos os candidatos de raça preta, e checar a proporção das respostas para as questões raciais.
+```{r}
+
+raca_preta = 
+    respostas %>% 
+    filter(cor_tse %in% c("PRETA")) %>% 
+    gather(key = "tema", 
+           value = "resposta", 
+           10:23) %>%
+    group_by(tema)  %>% 
+    filter(tema %in% c("Igualdade de gênero e raça nas escolas","Ações afirmativas raciais")) %>%
+    summarise(apoio = sum(resposta == "S") / n(),
+              naoapoio = sum(resposta=="N") / n())
+
+plot_ly(data= raca_preta, x = ~tema, y = ~apoio, type = 'bar', name = 'Apoiam') %>%
+  add_trace(y = ~naoapoio, name = 'Não apoiam') %>%
+  layout(yaxis = list(title = 'Proporção'), barmode = 'group')
+
+
+```
+Nota-se que boa parte(90%) dos candidatos de cor PRETA apoiam as causas raciais, porém esse valor poderia ser 100% já que os candidatos estão apoiando as causas de sua própria raça/etnia.
+
+#2.2. E as candidatas do gênero feminino, apoiam os temas relacionados ao gênero?
+### Para responder essa pergunta, irei pegar a proporção de mulheres que apoiam os assuntos relacionados a gênero.
+```{r}
+
+mulheres = 
+    respostas %>% 
+    filter(genero %in% c("FEMININO")) %>% 
+    gather(key = "tema", 
+           value = "resposta", 
+           10:23) %>%
+    group_by(tema)  %>% 
+    filter(tema %in% c("Igualdade de gênero e raça nas escolas","Combate à violência contra mulher","Cota para mulheres no legislativo")) %>%
+    summarise(apoio = sum(resposta == "S") / n(),
+              naoapoio = sum(resposta=="N") / n())
+
+plot_ly(data= mulheres, x = ~tema, y = ~apoio, type = 'bar', name = 'Apoiam') %>%
+  add_trace(y = ~naoapoio, name = 'Não apoiam') %>%
+  layout(yaxis = list(title = 'Proporção'), barmode = 'group')
+
+```
+Maior parte das candidatas do gênero feminino apoiam os assuntos ligados a gênero, sendo que o de maior apoio é no tema Igualdade de gênero. O tema de menor apoio (91%) é o de cota para mulheres no legislativo, mesmo sendo o de menor apoio ainda tem grande proporção, e demonstra que as mulheres estão buscando cada vez mais espaço e poder de voz na política.
